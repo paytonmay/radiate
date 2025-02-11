@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SVG Circle Logo Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            margin: 0;
+        }
+        .sidebar {
+            width: 300px;
+            background: #f4f4f4;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+        .input-group {
+            margin-bottom: 10px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+        }
+        #preview-container {
+            width: 90%;
+            max-width: 1000px;
+            height: auto;
+            overflow: visible;
+            border: 1px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+        }
+        #preview svg {
+            width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>SVG Circle Logo Generator</h2>
+        <div class="input-group">
+            <label for="svgWidth">SVG Width (px)</label>
+            <input type="number" id="svgWidth" value="800">
+        </div>
+        <div class="input-group">
+            <label for="svgHeight">SVG Height (px)</label>
+            <input type="number" id="svgHeight" value="800">
+        </div>
+        <div class="input-group">
+            <label for="fontSelect">Choose Font</label>
+            <select id="fontSelect">
+                <option value="Arial">Arial</option>
+                <option value="Times New Roman">Times New Roman</option>
+                <option value="Courier New">Courier New</option>
+            </select>
+        </div>
+        <div class="input-group">
+            <label for="fontSize">Font Size</label>
+            <input type="number" id="fontSize" value="24">
+        </div>
+        <div class="input-group">
+            <label for="textSpacing">Text Spacing from Circle</label>
+            <input type="number" id="textSpacing" value="10">
+        </div>
+        <div class="input-group">
+            <label for="textInput">Comma-separated text labels</label>
+            <textarea id="textInput"></textarea>
+        </div>
+        <div class="input-group">
+            <label for="imageUpload">Center Image</label>
+            <input type="file" id="imageUpload" accept="image/*">
+        </div>
+        <button onclick="generateSVG()">Generate SVG</button>
+        <button onclick="downloadSVG()">Download SVG</button>
+    </div>
+    <div class="main">
+        <div id="preview-container">
+            <div id="preview"></div>
+        </div>
+    </div>
+
+    <script>
+        function generateSVG() {
+            let svgWidth = document.getElementById('svgWidth').value;
+            let svgHeight = document.getElementById('svgHeight').value;
+            let font = document.getElementById('fontSelect').value;
+            let fontSize = document.getElementById('fontSize').value;
+            let textSpacing = parseInt(document.getElementById('textSpacing').value);
+            let textLabels = document.getElementById('textInput').value.split(',').map(s => s.trim()).sort();
+            let imageFile = document.getElementById('imageUpload').files[0];
+
+            let svgNS = "http://www.w3.org/2000/svg";
+            let svg = document.createElementNS(svgNS, "svg");
+            svg.setAttribute("width", svgWidth);
+            svg.setAttribute("height", svgHeight);
+            svg.setAttribute("viewBox", `0 0 ${svgWidth} ${svgHeight}`);
+            svg.setAttribute("preserveAspectRatio", "xMidYMid meet");
+
+            let centerX = svgWidth / 2;
+            let centerY = svgHeight / 2;
+            let baseRadius = Math.min(svgWidth, svgHeight) / 2 - 50;
+            let textRadius = baseRadius + textSpacing;
+            let angleStep = 360 / textLabels.length;
+
+            if (imageFile) {
+                let imgURL = URL.createObjectURL(imageFile);
+                let imageElement = document.createElementNS(svgNS, "image");
+                imageElement.setAttribute("href", imgURL);
+                imageElement.setAttribute("x", centerX - baseRadius);
+                imageElement.setAttribute("y", centerY - baseRadius);
+                imageElement.setAttribute("width", baseRadius * 2);
+                imageElement.setAttribute("height", baseRadius * 2);
+                svg.appendChild(imageElement);
+            }
+
+            textLabels.forEach((label, i) => {
+                let angle = angleStep * i - 90;
+                let angleRad = angle * Math.PI / 180;
+                let x = centerX + textRadius * Math.cos(angleRad);
+                let y = centerY + textRadius * Math.sin(angleRad);
+
+                let textElement = document.createElementNS(svgNS, "text");
+                textElement.setAttribute("x", x);
+                textElement.setAttribute("y", y);
+                textElement.setAttribute("font-family", font);
+                textElement.setAttribute("font-size", fontSize + "px");
+                textElement.setAttribute("fill", "black");
+                textElement.setAttribute("transform", `rotate(${angle}, ${x}, ${y})`);
+                textElement.textContent = label;
+                svg.appendChild(textElement);
+            });
+
+            document.getElementById("preview").innerHTML = "";
+            document.getElementById("preview").appendChild(svg);
+        }
+
+        function downloadSVG() {
+            let svgData = document.getElementById("preview").innerHTML;
+            let blob = new Blob([svgData], { type: "image/svg+xml" });
+            let link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "circle_logo.svg";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
